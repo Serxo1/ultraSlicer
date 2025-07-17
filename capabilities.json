@@ -1,0 +1,69 @@
+{
+  "dataRoles": [
+    {
+      "name": "SlicerFields",
+      "kind": "Grouping",
+      "displayName": "Campos"
+    }
+  ],
+  "dataViewMappings": [
+    {
+      "categorical": {
+        "categories": {
+          "for": {
+            "in": "SlicerFields"
+          }
+        }
+      }
+    }
+  ],
+  "objects": {
+    "layout": {
+      "displayName": "Layout",
+      "properties": {
+        "columns": {
+          "type": {
+            "numeric": true
+          },
+          "displayName": "Colunas"
+        },
+        "gutter": {
+          "type": {
+            "numeric": true
+          },
+          "displayName": "Espaço"
+        }
+      }
+    },
+    "slicer": {
+      "displayName": "Slicer",
+      "properties": {
+        "height": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "width": {
+          "type": {
+            "numeric": true
+          }
+        },
+        "borderColor": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "singleSelect": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    }
+  },
+  "privileges": []
+}

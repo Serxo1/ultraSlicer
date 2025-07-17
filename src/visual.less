@@ -1,0 +1,25 @@
+.grid-root {
+  display: flex; /* Alterado para flex para acomodar colunas de slicers */
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 10px;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.slicer-container {
+  flex: 1 1 200px; /* Permite que os slicers cresçam e encolham */
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 5px;
+}
+
+.slicer-header {
+  font-weight: bold;
+  padding: 5px;
+  border-bottom: 1px solid #ccc;
+  margin-bottom: 5px;
