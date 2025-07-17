@@ -9,6 +9,10 @@ export declare class Visual implements IVisual {
     private activeSelectionKeys;
     constructor(opts: VisualConstructorOptions);
     update(opts: VisualUpdateOptions): void;
+    private getDisplayMode;
+    private getSlicerSettings;
+    private renderDropdown;
+    private renderList;
     destroy(): void;
     private buildCache;
     private applyFilter;
