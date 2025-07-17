@@ -6,9 +6,10 @@ export declare class Visual implements IVisual {
     private host;
     private selectionManager;
     private container;
-    private cache;
+    private activeSelectionKeys;
     constructor(opts: VisualConstructorOptions);
     update(opts: VisualUpdateOptions): void;
     destroy(): void;
     private buildCache;
+    private applyFilter;
 }

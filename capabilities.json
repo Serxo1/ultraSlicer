@@ -18,6 +18,20 @@
     }
   ],
   "objects": {
+    "general": {
+      "displayName": "General",
+      "properties": {
+        "displayMode": {
+          "displayName": "Display Mode",
+          "type": {
+            "enumeration": [
+              { "value": "list", "displayName": "List" },
+              { "value": "dropdown", "displayName": "Dropdown" }
+            ]
+          }
+        }
+      }
+    },
     "layout": {
       "displayName": "Layout",
       "properties": {
