@@ -1,89 +1,139 @@
 {
-  "dataRoles": [
-    {
-      "name": "SlicerFields",
-      "kind": "Grouping",
-      "displayName": "Campos"
-    }
-  ],
-  "dataViewMappings": [
-    {
-      "categorical": {
-        "categories": {
-          "for": {
-            "in": "SlicerFields"
-          }
+    "dataRoles": [
+        {
+            "displayName": "Campos de Filtro",
+            "name": "category",
+            "kind": "Grouping"
         }
-      }
-    }
-  ],
-  "objects": {
-    "general": {
-      "displayName": "General",
-      "properties": {
-        "displayMode": {
-          "displayName": "Display Mode",
-          "type": {
-            "enumeration": [
-              { "value": "list", "displayName": "List" },
-              { "value": "dropdown", "displayName": "Dropdown" }
-            ]
-          }
-        }
-      }
-    },
-    "layout": {
-      "displayName": "Layout",
-      "properties": {
-        "columns": {
-          "type": {
-            "numeric": true
-          },
-          "displayName": "Colunas"
-        },
-        "gutter": {
-          "type": {
-            "numeric": true
-          },
-          "displayName": "Espaço"
-        }
-      }
-    },
-    "slicer": {
-      "displayName": "Slicer",
-      "properties": {
-        "height": {
-          "type": {
-            "numeric": true
-          }
-        },
-        "width": {
-          "type": {
-            "numeric": true
-          }
-        },
-        "borderColor": {
-          "type": {
-            "fill": {
-              "solid": {
-                "color": true
-              }
+    ],
+    "objects": {
+        "slicerSettings": {
+            "displayName": "Slicer Settings",
+            "properties": {
+                "multiSelect": {
+                    "displayName": "Multi-Select",
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "singleSelect": {
+                    "displayName": "Single-Select",
+                    "type": {
+                        "bool": true
+                    }
+                }
             }
-          }
         },
-        "singleSelect": {
-          "type": {
-            "bool": true
-          }
+        "grid": {
+            "displayName": "Grid Layout",
+            "properties": {
+                "flexDirection": {
+                    "displayName": "Flex Direction",
+                    "type": { "text": true }
+                },
+                "justifyContent": {
+                    "displayName": "Justify Content",
+                    "type": { "text": true }
+                }
+            }
         },
-        "multiSelect": {
-          "displayName": "Multi-select",
-          "type": {
-            "bool": true
-          }
+        "container": {
+            "displayName": "Container",
+            "properties": {
+                "backgroundColor": {
+                    "displayName": "Background Color",
+                    "type": { "fill": { "solid": { "color": true } } }
+                },
+                "borderColor": {
+                    "displayName": "Border Color",
+                    "type": { "fill": { "solid": { "color": true } } }
+                },
+                "borderWidth": {
+                    "displayName": "Border Width",
+                    "type": { "numeric": true }
+                },
+                "borderRadius": {
+                    "displayName": "Border Radius",
+                    "type": { "numeric": true }
+                },
+                "padding": {
+                    "displayName": "Padding",
+                    "type": { "numeric": true }
+                },
+                "boxShadow": {
+                    "displayName": "Box Shadow",
+                    "type": { "text": true }
+                }
+            }
+        },
+        "label": {
+            "displayName": "Label",
+            "properties": {
+                "color": {
+                    "displayName": "Color",
+                    "type": { "fill": { "solid": { "color": true } } }
+                },
+                "fontSize": {
+                    "displayName": "Font Size",
+                    "type": { "numeric": true }
+                },
+                "fontWeight": {
+                    "displayName": "Font Weight",
+                    "type": { "text": true }
+                },
+                "textAlign": {
+                    "displayName": "Text Align",
+                    "type": { "text": true }
+                }
+            }
+        },
+        "selector": {
+            "displayName": "Selector",
+            "properties": {
+                "backgroundColor": {
+                    "displayName": "Background Color",
+                    "type": { "fill": { "solid": { "color": true } } }
+                },
+                "borderColor": {
+                    "displayName": "Border Color",
+                    "type": { "fill": { "solid": { "color": true } } }
+                },
+                "borderWidth": {
+                    "displayName": "Border Width",
+                    "type": { "numeric": true }
+                },
+                "borderRadius": {
+                    "displayName": "Border Radius",
+                    "type": { "numeric": true }
+                },
+                "color": {
+                    "displayName": "Color",
+                    "type": { "fill": { "solid": { "color": true } } }
+                },
+                "fontSize": {
+                    "displayName": "Font Size",
+                    "type": { "numeric": true }
+                }
+            }
         }
-      }
-    }
-  },
-  "privileges": []
+    },
+    "dataViewMappings": [
+        {
+            "categorical": {
+                "categories": {
+                    "for": {
+                        "in": "category"
+                    },
+                    "dataReductionAlgorithm": {
+                        "window": {
+                            "count": 5000
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "privileges": [],
+    "supportsKeyboardFocus": true,
+    "supportsMultiVisualSelection": true
 }

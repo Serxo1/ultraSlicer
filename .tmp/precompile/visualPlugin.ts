@@ -9,7 +9,7 @@ var GridSlicer_guid_placeholder_DEBUG: IVisualPlugin = {
     name: 'GridSlicer_guid_placeholder_DEBUG',
     displayName: 'Grid Slicer',
     class: 'Visual',
-    apiVersion: '5.3.0',
+    apiVersion: '5.7.0',
     create: (options?: VisualConstructorOptions) => {
         if (Visual) {
             return new Visual(options);

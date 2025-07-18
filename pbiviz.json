@@ -9,7 +9,7 @@
     "supportUrl": "https://your-support-url.com",
     "gitHubUrl": "https://github.com/your-repo"
   },
-  "apiVersion": "5.3.0",
+  "apiVersion": "5.7.0",
   "author": {
     "name": "Your Name",
     "email": "your.email@example.com"
@@ -18,7 +18,7 @@
     "icon": "assets/icon.png"
   },
   "externalJS": [],
-  "style": "src/visual.less",
+  "style": "style/visual.less",
   "capabilities": "capabilities.json",
   "dependencies": null,
   "stringResources": []
