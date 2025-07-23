@@ -47,6 +47,27 @@
   &:hover {
     background-color: #f0f0f0; /* Simple hover effect */
   }
+
+  .header-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .arrow-down {
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 6px solid #666;
+    margin-left: 8px;
+    transition: transform 0.2s ease;
+  }
+
+  &.open .arrow-down {
+    transform: rotate(180deg);
+  }
   
   &:active {
     transform: translateY(1px);
@@ -92,12 +113,78 @@
   }
 }
 
+/* Container virtualizado para melhor performance */
+.virtual-container {
+  max-height: 200px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  
+  /* Otimizações de performance */
+  will-change: scroll-position;
+  transform: translateZ(0); /* Force hardware acceleration */
+  
+  /* Scrollbar personalizada */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+    
+    &:hover {
+      background: #a8a8a8;
+    }
+  }
+}
+
+/* Estilos para cross-filtering */
+.dropdown-option {
+  transition: opacity 0.2s ease, color 0.2s ease;
+  
+  /* Estado indisponível (cross-filtering) */
+  &[style*="opacity: 0.4"] {
+    color: #999 !important;
+    background-color: #f8f9fa !important;
+    cursor: not-allowed !important;
+    
+    &:hover {
+      background-color: #f8f9fa !important;
+      color: #999 !important;
+    }
+  }
+  
+  /* Estado selecionado sempre visível */
+  &.selected {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+}
+
+.options-container {
+  max-height: 200px; // Altura máxima para a lista
+  overflow-y: auto;  // Adiciona a barra de rolagem vertical
+  padding-right: 5px; // Espaço para a barra de rolagem
+}
+
+
+
 .dropdown-options {
   max-height: 150px;
   overflow-y: auto;
 }
 
 .dropdown-option {
+  display: flex;
+  align-items: center;
   padding: 10px 16px;
   cursor: pointer;
   border-bottom: 1px solid #f0f0f0;
@@ -116,8 +203,32 @@
     font-weight: bold;
   }
 
+  &.not-found-option {
+    font-style: italic;
+    color: #888;
+    background-color: #f9f9f9;
+    cursor: pointer;
+
+    &:hover {
+        background-color: #e9ecef;
+        color: #333;
+    }
+
+    .fake-checkbox {
+        // Estilos específicos para o checkbox 'fake', se necessário
+    }
+  }
+
   &:last-child {
     border-bottom: none;
+  }
+
+  .real-checkbox, .fake-checkbox {
+    margin-right: 8px;
+  }
+
+  .option-text {
+    flex-grow: 1;
   }
 }
 

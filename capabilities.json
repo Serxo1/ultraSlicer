@@ -7,6 +7,17 @@
         }
     ],
     "objects": {
+        "general": {
+            "displayName": "General",
+            "properties": {
+                "filter": {
+                    "displayName": "Filter",
+                    "type": {
+                        "filter": true
+                    }
+                }
+            }
+        },
         "slicerSettings": {
             "displayName": "Slicer Settings",
             "properties": {
@@ -126,7 +137,7 @@
                     },
                     "dataReductionAlgorithm": {
                         "window": {
-                            "count": 5000
+                            "count": 30000
                         }
                     }
                 }
@@ -135,5 +146,7 @@
     ],
     "privileges": [],
     "supportsKeyboardFocus": true,
-    "supportsMultiVisualSelection": true
+    "supportsMultiVisualSelection": true,
+    "supportsSynchronizingFilterState": true,
+    "supportsHighlight": true
 }

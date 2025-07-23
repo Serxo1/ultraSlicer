@@ -14,9 +14,10 @@ import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructor
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import ISelectionManager = powerbi.extensibility.ISelectionManager;
 
+
 /* ---------- SETTINGS CLASSES (NEW API) ---------- */
 
-class SlicerSettingsCard extends formattingSettings.SimpleCard {
+class SlicerSettingsCard extends formattingSettings.Card {
     multiSelect = new formattingSettings.ToggleSwitch({
         name: "multiSelect",
         displayName: "Multi-Select",
@@ -34,7 +35,7 @@ class SlicerSettingsCard extends formattingSettings.SimpleCard {
     slices: formattingSettings.Slice[] = [this.multiSelect, this.singleSelect];
 }
 
-class GridCard extends formattingSettings.SimpleCard {
+class GridCard extends formattingSettings.Card {
     flexDirection = new formattingSettings.ItemDropdown({
         name: "flexDirection", displayName: "Direction",
         items: [{ value: "row", displayName: "Horizontal" }, { value: "column", displayName: "Vertical" }],
@@ -67,7 +68,7 @@ class GridCard extends formattingSettings.SimpleCard {
     slices: formattingSettings.Slice[] = [this.flexDirection, this.justifyContent, this.alignItems, this.alignContent, this.horizontalSpacing, this.verticalSpacing];
 }
 
-class ContainerCard extends formattingSettings.SimpleCard {
+class ContainerCard extends formattingSettings.Card {
     backgroundColor = new formattingSettings.ColorPicker({ name: "backgroundColor", displayName: "Background Color", value: { value: "#FFFFFF" } });
     borderColor = new formattingSettings.ColorPicker({ name: "borderColor", displayName: "Border Color", value: { value: "#DDDDDD" } });
     borderWidth = new formattingSettings.NumUpDown({ name: "borderWidth", displayName: "Border Width", value: 1 });
@@ -81,7 +82,7 @@ class ContainerCard extends formattingSettings.SimpleCard {
     slices: formattingSettings.Slice[] = [this.backgroundColor, this.borderColor, this.borderWidth, this.borderRadius, this.padding, this.shadow, this.flexGrow];
 }
 
-class LabelCard extends formattingSettings.SimpleCard {
+class LabelCard extends formattingSettings.Card {
     fontColor = new formattingSettings.ColorPicker({ name: "fontColor", displayName: "Font Color", value: { value: "#333333" } });
     fontSize = new formattingSettings.NumUpDown({ name: "fontSize", displayName: "Font Size", value: 14 });
     fontWeight = new formattingSettings.ItemDropdown({ name: "fontWeight", displayName: "Font Weight", items: [{ value: "normal", displayName: "Normal" }, { value: "bold", displayName: "Bold" }], value: { value: "bold", displayName: "Bold" } });
@@ -92,7 +93,7 @@ class LabelCard extends formattingSettings.SimpleCard {
     slices: formattingSettings.Slice[] = [this.fontColor, this.fontSize, this.fontWeight, this.textAlign];
 }
 
-class SelectorCard extends formattingSettings.SimpleCard {
+class SelectorCard extends formattingSettings.Card {
     backgroundColor = new formattingSettings.ColorPicker({ name: "backgroundColor", displayName: "Background Color", value: { value: "#FFFFFF" } });
     fontColor = new formattingSettings.ColorPicker({ name: "fontColor", displayName: "Font Color", value: { value: "#333333" } });
     fontSize = new formattingSettings.NumUpDown({ name: "fontSize", displayName: "Font Size", value: 12 });
@@ -107,7 +108,7 @@ class SelectorCard extends formattingSettings.SimpleCard {
     slices: formattingSettings.Slice[] = [this.backgroundColor, this.fontColor, this.fontSize, this.borderColor, this.borderWidth, this.borderRadius, this.height, this.arrowColor];
 }
 
-class DropdownCard extends formattingSettings.SimpleCard {
+class DropdownCard extends formattingSettings.Card {
     itemBackgroundColor = new formattingSettings.ColorPicker({ name: "itemBackgroundColor", displayName: "Item Background", value: { value: "#FFFFFF" } });
     itemFontColor = new formattingSettings.ColorPicker({ name: "itemFontColor", displayName: "Item Font Color", value: { value: "#333333" } });
     itemHoverBackgroundColor = new formattingSettings.ColorPicker({ name: "itemHoverBackgroundColor", displayName: "Hover Background", value: { value: "#e9ecef" } });
@@ -137,11 +138,13 @@ class VisualFormattingSettings extends formattingSettings.Model {
 
 /* ------------------------- VISUAL ------------------------------ */
 
+
+
 export class Visual implements IVisual {
   private host: IVisualHost;
-  private selectionManager: ISelectionManager;
+  private selectionManager: ISelectionManager; // Ainda necessário para tooltips
   private container: HTMLElement;
-  private activeSelectionKeys: Set<string> = new Set();
+
 
   private formattingSettings: VisualFormattingSettings;
   private formattingSettingsService: FormattingSettingsService;
@@ -159,24 +162,38 @@ export class Visual implements IVisual {
       return this.formattingSettingsService.buildFormattingModel(this.formattingSettings);
   }
 
+  private updateThrottleTimeout: NodeJS.Timeout | null = null;
+  
   public update(options: VisualUpdateOptions): void {
-    this.formattingSettings = this.formattingSettingsService.populateFormattingSettingsModel(VisualFormattingSettings, options.dataViews[0]);
+    this.formattingSettings = this.formattingSettingsService.populateFormattingSettingsModel(VisualFormattingSettings, options.dataViews);
 
     if (!options?.dataViews?.[0]) {
-      this.container.innerHTML = "";
-      return;
+        this.container.innerHTML = "";
+        return;
     }
 
     const dataView = options.dataViews[0];
-    this.activeSelectionKeys = new Set(
-      (this.selectionManager.getSelectionIds() as any[]).map(id => JSON.stringify(id.getKey()) + JSON.stringify(id.getSelector()))
-    );
 
 
 
     const cat = dataView.categorical?.categories;
-    if (cat) this.renderDropdown(cat, dataView);
-  }
+    if (cat) {
+        this.renderDropdown(cat, dataView);
+        
+        // Throttle da atualização da UI para melhor performance
+        if (this.updateThrottleTimeout) {
+            clearTimeout(this.updateThrottleTimeout);
+        }
+        
+        this.updateThrottleTimeout = setTimeout(() => {
+            const dropdownContainers = this.container.querySelectorAll('.custom-dropdown');
+            dropdownContainers.forEach(container => {
+                this.updateSelectionUI(container as HTMLElement, dataView);
+            });
+            this.updateThrottleTimeout = null;
+        }, 50); // Throttle de 50ms
+    }
+}
 
   private renderDropdown(categories: powerbi.DataViewCategoryColumn[], dataView: powerbi.DataView): void {
     const existingSlicers = new Set<string>();
@@ -370,8 +387,7 @@ export class Visual implements IVisual {
         }
     };
 
-    this.updateHeaderText(headerText, category, dataView);
-    this.populateDropdownOptions(dropdownListContainer, category, dataView, headerText);
+    this.populateDropdownOptions(dropdownListContainer, category, dataView);
 
     // Apply styles after elements are created or updated
     this.applyLabelStyles(label);
@@ -379,124 +395,443 @@ export class Visual implements IVisual {
     this.applyDropdownStyles(dropdownListContainer);
   }
 
-  private populateDropdownOptions(content: HTMLElement, category: powerbi.DataViewCategoryColumn, dataView: powerbi.DataView, headerText: HTMLElement) {
+  private populateDropdownOptions(content: HTMLElement, category: powerbi.DataViewCategoryColumn, dataView: powerbi.DataView) {
     content.innerHTML = ''; // Clear existing options
 
     const searchInput = document.createElement("input");
     searchInput.type = "text";
     searchInput.placeholder = "Buscar opções...";
     searchInput.className = "search-input";
-    searchInput.onkeyup = () => {
-        const filter = searchInput.value.toUpperCase();
-        const options = content.querySelectorAll(".dropdown-option");
-        options.forEach(option => {
-            const txtValue = option.textContent || "";
-            (option as HTMLElement).style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
-        });
-    };
     content.appendChild(searchInput);
 
-    // 'All' Option
-    this.createOption(content, "All", 0, category, dataView, headerText, true);
+    // Container virtualizado para as opções
+    const virtualContainer = document.createElement("div");
+    virtualContainer.className = "virtual-container";
+    virtualContainer.style.maxHeight = "200px";
+    virtualContainer.style.overflowY = "auto";
+    content.appendChild(virtualContainer);
 
-    // Data Options
+    // 'Todos' Option
+    this.createOption(virtualContainer, "Todos", 0, category, dataView, true);
+
+    // Remover duplicatas e preparar dados únicos
+    const uniqueValues = new Map<string, { value: powerbi.PrimitiveValue, index: number }>();
     category.values.forEach((value, index) => {
-        const displayValue = (value !== null && value !== undefined && value !== '') ? String(value) : `Item ${index + 1}`;
-        this.createOption(content, displayValue, index, category, dataView, headerText, false);
+        let displayValue: string;
+        if (value instanceof Date) {
+            const date = new Date(value);
+            date.setUTCHours(0, 0, 0, 0);
+            displayValue = date.toLocaleDateString();
+        } else {
+            displayValue = (value !== null && value !== undefined && value !== '') ? String(value) : `Item ${index + 1}`;
+        }
+        
+        // Usar displayValue como chave para evitar duplicatas
+        if (!uniqueValues.has(displayValue)) {
+            uniqueValues.set(displayValue, { value, index });
+        }
     });
+
+    // Renderizar opções únicas
+    const sortedValues = Array.from(uniqueValues.entries()).sort(([a], [b]) => a.localeCompare(b));
+    
+    sortedValues.forEach(([displayValue, { value, index }]) => {
+        this.createOption(virtualContainer, displayValue, index, category, dataView, false);
+    });
+
+    // Implementar busca com debounce para performance
+    let searchTimeout: NodeJS.Timeout;
+    searchInput.onkeyup = () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            const filter = searchInput.value.toUpperCase();
+            const options = virtualContainer.querySelectorAll(".dropdown-option");
+            options.forEach(option => {
+                const txtValue = option.textContent || "";
+                (option as HTMLElement).style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+            });
+        }, 150); // Debounce de 150ms
+    };
   }
 
-  private createOption(container: HTMLElement, name: string, index: number, category: powerbi.DataViewCategoryColumn, dataView: powerbi.DataView, headerText: HTMLElement, isAllOption: boolean) {
+  private createOption(container: HTMLElement, name: string, index: number, category: powerbi.DataViewCategoryColumn, dataView: powerbi.DataView, isAllOption: boolean) {
       const option = document.createElement("div");
       option.className = "dropdown-option";
       option.textContent = name;
 
-      const selectionId = this.host.createSelectionIdBuilder()
-          .withCategory(category, isAllOption ? null : index)
-          .createSelectionId();
-
-      // Check if this option should be marked as selected
-      if (isAllOption) {
-          // 'All' is selected when no selections exist or all items are selected
-          const selections = this.selectionManager.getSelectionIds();
-          if (selections.length === 0 || selections.length === category.values.length) {
-              option.classList.add("selected");
-          }
+      let selectionId: powerbi.visuals.ISelectionId | null = null;
+      let isSelected = false;
+      
+      if (!isAllOption) {
+          selectionId = this.host.createSelectionIdBuilder()
+              .withCategory(category, index)
+              .createSelectionId();
+          
+          isSelected = this.selectionManager.getSelectionIds()
+                .some(selectedId => {
+                    return this.compareSelectionIds(selectedId as any, selectionId as any);
+                });
       } else {
-          const key = JSON.stringify((selectionId as any).getKey()) + JSON.stringify((selectionId as any).getSelector());
-          if (this.activeSelectionKeys.has(key)) {
-              option.classList.add("selected");
-          }
+          // Para "Todos", está selecionado se não há seleções ativas
+          isSelected = this.selectionManager.getSelectionIds().length === 0;
       }
 
-      option.onclick = (event) => {
+      if (isSelected) {
+          option.classList.add("selected");
+      }
 
-          if (isAllOption) {
-              // Clear all selections when 'All' is clicked
-              this.selectionManager.clear();
-              this.activeSelectionKeys.clear();
+      option.onclick = async (event) => {
+            event.stopPropagation();
+            const multiSelect = this.formattingSettings.slicerSettings.multiSelect.value;
+            
+            try {
+                if (isAllOption) {
+                    await this.selectionManager.clear();
+                } else if (selectionId) {
+                    await this.selectionManager.select(selectionId, multiSelect);
+                }
+                
+                // Usar requestAnimationFrame para otimizar a atualização da UI
+                requestAnimationFrame(() => {
+                    const allDropdownContainers = this.container.querySelectorAll('.custom-dropdown');
+                    allDropdownContainers.forEach(dropdown => {
+                        this.updateSelectionUI(dropdown as HTMLElement, dataView);
+                    });
+                });
+                
+                // Notificar o Power BI sobre a mudança de seleção
+                const currentSelections = this.selectionManager.getSelectionIds();
+                this.host.persistProperties({
+                    merge: [{
+                        objectName: "general",
+                        properties: {
+                            selection: JSON.stringify(currentSelections)
+                        },
+                        selector: null
+                    }]
+                });
+            } catch (error) {
+                console.error('Erro na seleção:', error);
+            }
+        };
 
-          } else {
-              const multiSelect = this.formattingSettings.slicerSettings.multiSelect.value;
-
-              this.selectionManager.select(selectionId, multiSelect);
-
-          }
-          this.updateAndClose(headerText, category, dataView, container.parentElement);
-          container.parentElement.classList.remove('open'); // Explicitly close dropdown
-      };
       container.appendChild(option);
   }
+  
+  private compareSelectionIds(id1: any, id2: any): boolean {
+      try {
+          // Primeiro tenta comparação por JSON
+          const json1 = JSON.stringify(id1);
+          const json2 = JSON.stringify(id2);
+          if (json1 === json2) {
+              return true;
+          }
+          
+          // Fallback: comparação por propriedades internas se disponíveis
+           if ((id1 as any).key && (id2 as any).key) {
+               return (id1 as any).key === (id2 as any).key;
+           }
+           
+           return false;
+       } catch (error) {
+           return false;
+       }
+  }
 
-  private updateAndClose(headerText: HTMLElement, category: powerbi.DataViewCategoryColumn, dataView: powerbi.DataView, dropdownListContainer: HTMLElement) {
-      // Update activeSelectionKeys to match current selections
-      const selections = this.selectionManager.getSelectionIds();
-      this.activeSelectionKeys.clear();
-      selections.forEach(selection => {
-          this.activeSelectionKeys.add(JSON.stringify((selection as any).getKey()) + JSON.stringify((selection as any).getSelector()));
-      });
-      
-      this.updateHeaderText(headerText, category, dataView);
-            
-      if (dropdownListContainer) {
-        dropdownListContainer.classList.remove('open');
+
+
+  private updateHeaderText(headerText: HTMLElement, dataView: powerbi.DataView, category?: powerbi.DataViewCategoryColumn) {
+          const selectionIds = this.selectionManager.getSelectionIds();
+          
+          // Se não há seleções, mostrar "Todos"
+          if (!selectionIds || selectionIds.length === 0) {
+              headerText.textContent = "Todos";
+              return;
+          }
+          
+          // Se categoria não foi fornecida, tentar identificar pelo container
+          if (!category) {
+              const slicerContainer = headerText.closest('[data-slicer-name]') as HTMLElement;
+              if (slicerContainer) {
+                  const slicerName = slicerContainer.getAttribute('data-slicer-name');
+                  category = dataView.categorical.categories.find(cat => cat.source.displayName === slicerName);
+              }
+          }
+          
+          if (!category) {
+              headerText.textContent = `${selectionIds.length} selecionados`;
+              return;
+          }
+          
+          // Filtrar seleções que pertencem a esta categoria específica
+          const categorySelections = selectionIds.filter(selectedId => {
+              for (let i = 0; i < category.values.length; i++) {
+                  const testId = this.host.createSelectionIdBuilder()
+                      .withCategory(category, i)
+                      .createSelectionId();
+                  if (this.compareSelectionIds(selectedId as any, testId as any)) {
+                      return true;
+                  }
+              }
+              return false;
+          });
+          
+          if (categorySelections.length === 0) {
+              headerText.textContent = "Todos";
+              return;
+          }
+          
+          if (categorySelections.length === 1) {
+              // Mostrar o valor específico selecionado
+              const selectedId = categorySelections[0];
+              
+              for (let i = 0; i < category.values.length; i++) {
+                  const testId = this.host.createSelectionIdBuilder()
+                      .withCategory(category, i)
+                      .createSelectionId();
+                  
+                  if (this.compareSelectionIds(selectedId as any, testId as any)) {
+                      let value = category.values[i];
+                      if (value instanceof Date) {
+                          value = value.toLocaleDateString('pt-BR');
+                      }
+                      headerText.textContent = String(value);
+                      return;
+                  }
+              }
+              
+              headerText.textContent = "1 selecionado";
+          } else {
+              headerText.textContent = `${categorySelections.length} selecionados`;
+          }
       }
-  }
 
-  private updateHeaderText(headerText: HTMLElement, category: powerbi.DataViewCategoryColumn, dataView: powerbi.DataView) {
-    const selections = this.selectionManager.getSelectionIds();
-    const selectedIdKeys = new Set((selections as any[]).map(id => JSON.stringify(id.getKey()) + JSON.stringify(id.getSelector())));
-    const selectedValues: powerbi.PrimitiveValue[] = [];
-    category.values.forEach((value, index) => {
-        const selectionId = this.host.createSelectionIdBuilder()
-            .withCategory(category, index)
-            .createSelectionId();
-        const key = JSON.stringify((selectionId as any).getKey()) + JSON.stringify((selectionId as any).getSelector());
-        if (selectedIdKeys.has(key)) {
-            selectedValues.push(value);
-        }
-    });
+  private updateSelectionUI(dropdownContainer: HTMLElement, dataView: powerbi.DataView) {
+           // Identificar qual categoria este dropdown representa
+           const slicerContainer = dropdownContainer.closest('[data-slicer-name]') as HTMLElement;
+           if (!slicerContainer) return;
+           
+           const slicerName = slicerContainer.getAttribute('data-slicer-name');
+           const category = dataView.categorical.categories.find(cat => cat.source.displayName === slicerName);
+           if (!category) return;
+           
+           const headerText = dropdownContainer.querySelector('.header-text') as HTMLElement;
+           if (headerText) {
+               this.updateHeaderText(headerText, dataView, category);
+           }
+           
+           const options = dropdownContainer.querySelectorAll('.dropdown-option');
+           const selectionIds = this.selectionManager.getSelectionIds();
+           
+           // Separar seleções por categoria
+           const currentCategorySelections = new Set<number>();
+           const otherCategorySelections = new Set<string>();
+           
+           selectionIds.forEach(selectedId => {
+               // Verificar se pertence à categoria atual
+               let belongsToCurrentCategory = false;
+               for (let i = 0; i < category.values.length; i++) {
+                   const testId = this.host.createSelectionIdBuilder()
+                       .withCategory(category, i)
+                       .createSelectionId();
+                   if (this.compareSelectionIds(selectedId as any, testId as any)) {
+                       currentCategorySelections.add(i);
+                       belongsToCurrentCategory = true;
+                       break;
+                   }
+               }
+               
+               // Se não pertence à categoria atual, é de outra categoria
+               if (!belongsToCurrentCategory) {
+                   otherCategorySelections.add(JSON.stringify(selectedId));
+               }
+           });
+           
+           // Cache para evitar recálculos
+           const valueToIndexMap = new Map<string, number>();
+           category.values.forEach((value, index) => {
+               let displayValue: string;
+               if (value instanceof Date) {
+                   const date = new Date(value);
+                   date.setUTCHours(0, 0, 0, 0);
+                   displayValue = date.toLocaleDateString();
+               } else {
+                   displayValue = (value !== null && value !== undefined && value !== '') ? String(value) : `Item ${index + 1}`;
+               }
+               if (!valueToIndexMap.has(displayValue)) {
+                   valueToIndexMap.set(displayValue, index);
+               }
+           });
+           
+           // Determinar quais valores estão disponíveis baseado em cross-filtering
+           const availableValues = new Set<number>();
+           
+           if (otherCategorySelections.size === 0) {
+               // Sem filtros de outras categorias, todos os valores estão disponíveis
+               for (let i = 0; i < category.values.length; i++) {
+                   availableValues.add(i);
+               }
+           } else {
+               // Com filtros de outras categorias, usar uma abordagem simplificada
+                // Verificar quais valores da categoria atual ainda têm dados válidos
+                const currentCategoryIndex = dataView.categorical.categories.findIndex(cat => cat === category);
+                
+                // Coletar índices de seleções de outras categorias
+                const otherCategoryFilters = new Map<number, Set<number>>();
+                
+                selectionIds.forEach(selectedId => {
+                    for (let catIndex = 0; catIndex < dataView.categorical.categories.length; catIndex++) {
+                        if (catIndex === currentCategoryIndex) continue;
+                        
+                        const otherCategory = dataView.categorical.categories[catIndex];
+                        for (let i = 0; i < otherCategory.values.length; i++) {
+                            const testId = this.host.createSelectionIdBuilder()
+                                .withCategory(otherCategory, i)
+                                .createSelectionId();
+                            if (this.compareSelectionIds(selectedId as any, testId as any)) {
+                                if (!otherCategoryFilters.has(catIndex)) {
+                                    otherCategoryFilters.set(catIndex, new Set());
+                                }
+                                otherCategoryFilters.get(catIndex)!.add(i);
+                            }
+                        }
+                    }
+                });
+                
+                // Se há filtros de outras categorias, aplicar cross-filtering real
+                 if (otherCategoryFilters.size > 0) {
+                     // Analisar os dados para encontrar intersecções válidas
+                     const dataLength = Math.min(...dataView.categorical.categories.map(cat => cat.values.length));
+                     
+                     // Para cada valor da categoria atual, verificar se há linhas de dados válidas
+                     for (let valueIndex = 0; valueIndex < category.values.length; valueIndex++) {
+                         let hasValidData = false;
+                         
+                         // Verificar todas as linhas de dados
+                          for (let rowIndex = 0; rowIndex < dataLength; rowIndex++) {
+                              // Para dados categóricos, verificar se esta linha tem o valor que estamos testando
+                              let currentRowValue = null;
+                              if (rowIndex < category.values.length) {
+                                  currentRowValue = category.values[rowIndex];
+                              }
+                              
+                              let targetValue = category.values[valueIndex];
+                              
+                              // Comparar valores (considerando diferentes tipos)
+                              let valuesMatch = false;
+                              if (currentRowValue === targetValue) {
+                                  valuesMatch = true;
+                              } else if (currentRowValue && targetValue) {
+                                  // Para datas
+                                  if (currentRowValue instanceof Date && targetValue instanceof Date) {
+                                      valuesMatch = currentRowValue.getTime() === targetValue.getTime();
+                                  } else {
+                                      valuesMatch = String(currentRowValue) === String(targetValue);
+                                  }
+                              }
+                              
+                              // Se esta linha não tem o valor que estamos testando, pular
+                              if (!valuesMatch) continue;
+                             
+                             // Verificar se esta linha atende aos filtros de outras categorias
+                             let rowMatchesAllFilters = true;
+                             
+                             for (const [catIndex, selectedIndices] of otherCategoryFilters) {
+                                 const otherCategory = dataView.categorical.categories[catIndex];
+                                 if (rowIndex < otherCategory.values.length) {
+                                     const rowValueInOtherCategory = otherCategory.values[rowIndex];
+                                     
+                                     // Verificar se o valor desta linha está nas seleções
+                                     let rowValueMatches = false;
+                                     for (const selectedIndex of selectedIndices) {
+                                         if (selectedIndex < otherCategory.values.length) {
+                                             const selectedValue = otherCategory.values[selectedIndex];
+                                             
+                                             if (rowValueInOtherCategory === selectedValue) {
+                                                 rowValueMatches = true;
+                                                 break;
+                                             } else if (rowValueInOtherCategory && selectedValue) {
+                                                 // Comparação mais robusta
+                                                 if (rowValueInOtherCategory instanceof Date && selectedValue instanceof Date) {
+                                                     rowValueMatches = rowValueInOtherCategory.getTime() === selectedValue.getTime();
+                                                 } else {
+                                                     rowValueMatches = String(rowValueInOtherCategory) === String(selectedValue);
+                                                 }
+                                                 if (rowValueMatches) break;
+                                             }
+                                         }
+                                     }
+                                     
+                                     if (!rowValueMatches) {
+                                         rowMatchesAllFilters = false;
+                                         break;
+                                     }
+                                 }
+                             }
+                             
+                             if (rowMatchesAllFilters) {
+                                 hasValidData = true;
+                                 break;
+                             }
+                         }
+                         
+                         // Se há dados válidos ou se o valor está selecionado, mantê-lo disponível
+                         if (hasValidData || currentCategorySelections.has(valueIndex)) {
+                             availableValues.add(valueIndex);
+                         }
+                     }
+                 } else {
+                     // Sem filtros de outras categorias, todos os valores estão disponíveis
+                     for (let i = 0; i < category.values.length; i++) {
+                         availableValues.add(i);
+                     }
+                 }
+           }
+           
+           options.forEach((option: HTMLElement) => {
+               const optionText = option.textContent;
+               
+               if (optionText === 'Todos') {
+                   const isAllSelected = currentCategorySelections.size === 0;
+                   option.classList.toggle('selected', isAllSelected);
+                   // "Todos" sempre disponível
+                   option.style.opacity = '1';
+                   option.style.pointerEvents = 'auto';
+               } else {
+                   const dataIndex = valueToIndexMap.get(optionText);
+                   if (dataIndex !== undefined) {
+                       const isSelected = currentCategorySelections.has(dataIndex);
+                       const isAvailable = availableValues.has(dataIndex);
+                       
+                       option.classList.toggle('selected', isSelected);
+                       
+                       // Aplicar estilo visual para indicar disponibilidade
+                       if (!isAvailable && !isSelected) {
+                           option.style.opacity = '0.4';
+                           option.style.pointerEvents = 'none';
+                       } else {
+                           option.style.opacity = '1';
+                           option.style.pointerEvents = 'auto';
+                       }
+                   }
+               }
+           });
+       }
 
-
-
-    if (selectedValues.length === 0) {
-        // Show "Todos" when no selection is made
-
-        headerText.textContent = "Todos";
-    } else if (selectedValues.length === 1) {
-        const selectedValue = selectedValues[0];
-        const displayText = (selectedValue !== null && selectedValue !== undefined && selectedValue !== '') ? String(selectedValue) : "Todos";
-
-        headerText.textContent = displayText;
-    } else if (selectedValues.length === category.values.length) {
-
-        headerText.textContent = "Todos";
-    } else {
-
-        headerText.textContent = `${selectedValues.length} selecionados`;
-    }
-  }
-
-
-  public destroy(): void { /* cleanup */ }
+    public destroy(): void {
+         // Limpar timeouts para evitar memory leaks
+         if (this.updateThrottleTimeout) {
+             clearTimeout(this.updateThrottleTimeout);
+             this.updateThrottleTimeout = null;
+         }
+         
+         // Limpar event listeners
+         const searchInputs = this.container.querySelectorAll('.search-input');
+         searchInputs.forEach(input => {
+             (input as HTMLInputElement).onkeyup = null;
+         });
+         
+         // Limpar container
+         this.container.innerHTML = '';
+     }
 }

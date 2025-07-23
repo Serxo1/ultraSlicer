@@ -7,11 +7,11 @@ export declare class Visual implements IVisual {
     private host;
     private selectionManager;
     private container;
-    private activeSelectionKeys;
     private formattingSettings;
     private formattingSettingsService;
     constructor(options: VisualConstructorOptions);
     getFormattingModel(): powerbi.visuals.FormattingModel;
+    private updateThrottleTimeout;
     update(options: VisualUpdateOptions): void;
     private renderDropdown;
     private applyGridStyles;
@@ -23,7 +23,8 @@ export declare class Visual implements IVisual {
     private createDropdownLayout;
     private populateDropdownOptions;
     private createOption;
-    private updateAndClose;
+    private compareSelectionIds;
     private updateHeaderText;
+    private updateSelectionUI;
     destroy(): void;
 }

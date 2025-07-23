@@ -5,8 +5,8 @@ import VisualConstructorOptions = powerbiVisualsApi.extensibility.visual.VisualC
 import DialogConstructorOptions = powerbiVisualsApi.extensibility.visual.DialogConstructorOptions;
 var powerbiKey: any = "powerbi";
 var powerbi: any = window[powerbiKey];
-var GridSlicer_guid_placeholder_DEBUG: IVisualPlugin = {
-    name: 'GridSlicer_guid_placeholder_DEBUG',
+var GridSlicer_guid_placeholder: IVisualPlugin = {
+    name: 'GridSlicer_guid_placeholder',
     displayName: 'Grid Slicer',
     class: 'Visual',
     apiVersion: '5.7.0',
@@ -27,6 +27,6 @@ var GridSlicer_guid_placeholder_DEBUG: IVisualPlugin = {
 if (typeof powerbi !== "undefined") {
     powerbi.visuals = powerbi.visuals || {};
     powerbi.visuals.plugins = powerbi.visuals.plugins || {};
-    powerbi.visuals.plugins["GridSlicer_guid_placeholder_DEBUG"] = GridSlicer_guid_placeholder_DEBUG;
+    powerbi.visuals.plugins["GridSlicer_guid_placeholder"] = GridSlicer_guid_placeholder;
 }
-export default GridSlicer_guid_placeholder_DEBUG;
+export default GridSlicer_guid_placeholder;
